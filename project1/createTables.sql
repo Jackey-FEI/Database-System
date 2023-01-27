@@ -1,4 +1,4 @@
-PRAGMA foreign_keys = ON;
+-- -- PRAGMA foreign_keys = ON;
 CREATE TABLE Users (
     user_id INTEGER PRIMARY KEY NOT NULL,
     first_name VARCHAR2(100) NOT NULL,
@@ -7,7 +7,6 @@ CREATE TABLE Users (
     month_of_birth INTEGER,
     day_of_brith INTEGER,
     gender VARCHAR2(100)
-
 );
 
 CREATE SEQUENCE Users_Seq
@@ -25,7 +24,7 @@ CREATE TRIGGER Users_Insert
 CREATE TABLE Friends (
     user1_id INTEGER NOT NULL,
     user2_id INTEGER NOT NULL,
-    UNIQUE (user1_id, user2_id),
+    PRIMARY KEY (user1_id, user2_id),
     FOREIGN KEY (user1_id) REFERENCES Users(user_id),
     FOREIGN KEY (user2_id) REFERENCES Users(user_id),
     CHECK (user1_id <> user2_id)
@@ -46,9 +45,9 @@ CREATE TRIGGER Order_Friend_Pairs
 
 CREATE TABLE Cities (
     city_id INTEGER PRIMARY KEY NOT NULL,
-    city_name INTEGER VARCHAR2(100) NOT NULL,
-    state_name INTEGER VARCHAR2(100) NOT NULL,
-    country_name INTEGER VARCHAR2(100) NOT NULL,
+    city_name VARCHAR2(100) NOT NULL,
+    state_name VARCHAR2(100) NOT NULL,
+    country_name VARCHAR2(100) NOT NULL,
     UNIQUE (city_name, state_name, country_name)
 );
 
@@ -84,7 +83,6 @@ CREATE TABLE Messages (
     receiver_id INTEGER NOT NULL,
     message_content VARCHAR2(2000) NOT NULL,
     sent_time TIMESTAMP NOT NULL,
-
     FOREIGN KEY (sender_id) REFERENCES Users(user_id),
     FOREIGN KEY (receiver_id) REFERENCES Users(user_id)
 );
@@ -113,7 +111,7 @@ CREATE TABLE Education (
     user_id INTEGER NOT NULL,
     program_id INTEGER NOT NULL,
     program_year INTEGER NOT NULL,
-    UNIQUE (user_id, program_id), 
+    PRIMARY KEY (user_id, program_id), 
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (program_id) REFERENCES Programs(program_id)
 );
@@ -146,11 +144,12 @@ CREATE TRIGGER Events_Insert
             SELECT Events_Seq.NEXTVAL INTO :NEW.event_id FROM DUAL;
         END;
 /
+
 CREATE TABLE Participants (
     event_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     confirmation VARCHAR2(100) NOT NULL,
-    UNIQUE (event_id, user_id),
+    PRIMARY KEY (event_id, user_id),
     FOREIGN KEY (event_id) REFERENCES User_Events(event_id),
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     CHECK (confirmation = 'Attending' OR 
@@ -158,6 +157,27 @@ CREATE TABLE Participants (
            confirmation = 'Declines'OR
            confirmation = 'Not_Replied')
 );
+
+CREATE TABLE Photos (
+    photo_id INTEGER PRIMARY KEY NOT NULL,
+    album_id INTEGER NOT NULL,
+    photo_caption VARCHAR2(2000),
+    photo_created_time TIMESTAMP NOT NULL,
+    photo_modified_time TIMESTAMP,
+    photo_link VARCHAR2(2000) NOT NULL
+);
+
+CREATE SEQUENCE Photos_Seq
+    START WITH 1
+    INCREMENT BY 1;
+
+CREATE TRIGGER Photos_Insert
+    BEFORE INSERT ON Photos
+    FOR EACH ROW
+        BEGIN
+            SELECT Photos_Seq.NEXTVAL INTO :NEW.photo_id FROM DUAL;
+        END;
+/
 
 CREATE TABLE Albums (
     album_id INTEGER PRIMARY KEY NOT NULL,
@@ -177,6 +197,9 @@ CREATE TABLE Albums (
            )
 );
 
+ALTER TABLE Photos ADD CONSTRAINT photo_belongs_album
+FOREIGN KEY (album_id) REFERENCES Albums(album_id);
+
 CREATE SEQUENCE Albums_Seq
     START WITH 1
     INCREMENT BY 1;
@@ -189,35 +212,13 @@ CREATE TRIGGER Albums_Insert
         END;
 /
 
-CREATE TABLE Photos (
-    photo_id INTEGER PRIMARY KEY NOT NULL,
-    album_id INTEGER NOT NULL,
-    photo_caption VARCHAR2(2000),
-    photo_created_time TIMESTAMP NOT NULL,
-    photo_modified_time TIMESTAMP,
-    photo_link VARCHAR2(2000) NOT NULL,
-    FOREIGN KEY (album_id) REFERENCES Albums(album_id)
-);
-
-CREATE SEQUENCE Photos_Seq
-    START WITH 1
-    INCREMENT BY 1;
-
-CREATE TRIGGER Photos_Insert
-    BEFORE INSERT ON Photos
-    FOR EACH ROW
-        BEGIN
-            SELECT Photos_Seq.NEXTVAL INTO :NEW.photo_id FROM DUAL;
-        END;
-/
-
 CREATE TABLE Tags (
     tag_photo_id INTEGER NOT NULL,
     tag_subject_id INTEGER NOT NULL,
     tag_created_time TIMESTAMP NOT NULL,
     tag_x NUMBER NOT NULL,
     tag_y NUMBER NOT NULL,
-    UNIQUE (tag_photo_id, tag_subject_id),
+    PRIMARY KEY (tag_photo_id, tag_subject_id),
     FOREIGN KEY (tag_photo_id) REFERENCES Photos(photo_id),
     FOREIGN KEY (tag_subject_id) REFERENCES Users(user_id)
 );
