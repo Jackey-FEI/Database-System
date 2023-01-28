@@ -115,23 +115,11 @@ CREATE TABLE User_Events (
     event_subtype VARCHAR2(100),
     event_address VARCHAR2(2000),
     event_city_id INTEGER NOT NULL,
-    event_start_timee TIMESTAMP,
+    event_start_time TIMESTAMP,
     event_end_time TIMESTAMP,
     FOREIGN KEY (event_creator_id) REFERENCES Users(user_id),
     FOREIGN KEY (event_city_id) REFERENCES Cities(city_id)
 );
-
-CREATE SEQUENCE Events_Seq
-    START WITH 1
-    INCREMENT BY 1;
-
-CREATE TRIGGER Events_Insert
-    BEFORE INSERT ON User_Events
-    FOR EACH ROW
-        BEGIN
-            SELECT Events_Seq.NEXTVAL INTO :NEW.event_id FROM DUAL;
-        END;
-/
 
 CREATE TABLE Participants (
     event_id INTEGER NOT NULL,
@@ -146,27 +134,6 @@ CREATE TABLE Participants (
            confirmation = 'Not_Replied')
 );
 
-CREATE TABLE Photos (
-    photo_id INTEGER PRIMARY KEY NOT NULL,
-    album_id INTEGER NOT NULL,
-    photo_caption VARCHAR2(2000),
-    photo_created_time TIMESTAMP NOT NULL,
-    photo_modified_time TIMESTAMP,
-    photo_link VARCHAR2(2000) NOT NULL
-);
-
-CREATE SEQUENCE Photos_Seq
-    START WITH 1
-    INCREMENT BY 1;
-
-CREATE TRIGGER Photos_Insert
-    BEFORE INSERT ON Photos
-    FOR EACH ROW
-        BEGIN
-            SELECT Photos_Seq.NEXTVAL INTO :NEW.photo_id FROM DUAL;
-        END;
-/
-
 CREATE TABLE Albums (
     album_id INTEGER PRIMARY KEY NOT NULL,
     album_owner_id INTEGER NOT NULL,
@@ -177,7 +144,6 @@ CREATE TABLE Albums (
     album_visibility VARCHAR2(100) NOT NULL,
     cover_photo_id INTEGER NOT NULL,
     FOREIGN KEY (album_owner_id) REFERENCES Users(user_id),
-    FOREIGN KEY (cover_photo_id) REFERENCES Photos(photo_id),
     CHECK (album_visibility = 'Everyone' OR
            album_visibility = 'Friends' OR
            album_visibility = 'Friends_Of_Friends' OR
@@ -185,20 +151,20 @@ CREATE TABLE Albums (
            )
 );
 
+CREATE TABLE Photos (
+    photo_id INTEGER PRIMARY KEY NOT NULL,
+    album_id INTEGER NOT NULL,
+    photo_caption VARCHAR2(2000),
+    photo_created_time TIMESTAMP NOT NULL,
+    photo_modified_time TIMESTAMP,
+    photo_link VARCHAR2(2000) NOT NULL
+);
+
+ALTER TABLE Albums ADD CONSTRAINT album_cover_photo
+FOREIGN KEY (cover_photo_id) REFERENCES Photos(photo_id) INITIALLY DEFERRED DEFERRABLE;
+
 ALTER TABLE Photos ADD CONSTRAINT photo_belongs_album
-FOREIGN KEY (album_id) REFERENCES Albums(album_id);
-
-CREATE SEQUENCE Albums_Seq
-    START WITH 1
-    INCREMENT BY 1;
-
-CREATE TRIGGER Albums_Insert
-    BEFORE INSERT ON Albums
-    FOR EACH ROW
-        BEGIN
-            SELECT Albums_Seq.NEXTVAL INTO :NEW.album_id FROM DUAL;
-        END;
-/
+FOREIGN KEY (album_id) REFERENCES Albums(album_id) INITIALLY DEFERRED DEFERRABLE;
 
 CREATE TABLE Tags (
     tag_photo_id INTEGER NOT NULL,
