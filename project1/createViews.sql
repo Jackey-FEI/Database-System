@@ -40,7 +40,7 @@ JOIN Programs
   ON Education.program_id = Programs.program_id;
 
 
-CREATE TABLE View_User_Information As
+CREATE VIEW View_User_Information As
 SELECT
     Users.user_id,
     Users.first_name,
@@ -67,32 +67,23 @@ JOIN Hometown_City_F
 LEFT JOIN Institution_F
   ON Users.user_id = Institution_F.user_id;
 
-ALTER TABLE View_User_Information
-MODIFY year_of_birth NOT NULL;
+-- ALTER TABLE View_User_Information
+-- MODIFY year_of_birth NOT NULL;
 
-ALTER TABLE View_User_Information
-MODIFY month_of_birth NOT NULL;
+-- ALTER TABLE View_User_Information
+-- MODIFY month_of_birth NOT NULL;
 
-ALTER TABLE View_User_Information
-MODIFY day_of_birth NOT NULL;
+-- ALTER TABLE View_User_Information
+-- MODIFY day_of_birth NOT NULL;
 
-ALTER TABLE View_User_Information
-MODIFY gender NOT NULL;
+-- ALTER TABLE View_User_Information
+-- MODIFY gender NOT NULL;
 
-CREATE TABLE View_Are_Friends (
-    user1_id INTEGER NOT NULL,
-    user2_id INTEGER NOT NULL,
-    PRIMARY KEY (user1_id, user2_id),
-    FOREIGN KEY (user1_id) REFERENCES Users(user_id),
-    FOREIGN KEY (user2_id) REFERENCES Users(user_id),
-    CHECK (user1_id <> user2_id)
-);
-
-INSERT INTO View_Are_Friends(user1_id,user2_id)
+CREATE VIEW View_Are_Friends As
 SELECT user1_id,user2_id
 FROM Friends;
 
-CREATE TABLE View_Photo_Information As
+CREATE VIEW View_Photo_Information As
 SELECT
     Albums.album_id,
     Albums.album_owner_id As owner_id,
@@ -112,26 +103,23 @@ JOIN Photos
   ON Albums.album_id = Photos.album_id;
 
 
-ALTER TABLE View_Photo_Information
-MODIFY album_modified_time NOT NULL;
+-- ALTER TABLE View_Photo_Information
+-- MODIFY album_modified_time NOT NULL;
 
-ALTER TABLE View_Photo_Information
-MODIFY photo_modified_time NOT NULL;
+-- ALTER TABLE View_Photo_Information
+-- MODIFY photo_modified_time NOT NULL;
 
 
-CREATE TABLE View_Tag_Information (
-    photo_id INTEGER NOT NULL,
-    tag_subject_id INTEGER NOT NULL,
-    tag_created_time TIMESTAMP NOT NULL,
-    tag_x_coordinate NUMBER NOT NULL,
-    tag_y_coordinate NUMBER NOT NULL
-);
-
-INSERT INTO View_Tag_Information (photo_id, tag_subject_id, tag_created_time, tag_x_coordinate, tag_y_coordinate)
-SELECT tag_photo_id, tag_subject_id, tag_created_time, tag_x, tag_y
+CREATE VIEW View_Tag_Information As
+SELECT 
+tag_photo_id AS photo_id, 
+tag_subject_id,
+tag_created_time,
+tag_x,
+tag_y
 FROM Tags;
 
-CREATE TABLE View_Event_Information As
+CREATE VIEW View_Event_Information As
 SELECT
     User_Events.event_id,
     User_Events.event_creator_id,
@@ -151,21 +139,3 @@ FROM User_Events
 JOIN Cities
   ON User_Events.event_city_id = Cities.city_id;
 
-
-ALTER TABLE View_Event_Information
-MODIFY event_host NOT NULL;
-
-ALTER TABLE View_Event_Information
-MODIFY event_type NOT NULL;
-
-ALTER TABLE View_Event_Information
-MODIFY event_subtype NOT NULL;
-
-ALTER TABLE View_Event_Information
-MODIFY event_address NOT NULL;
-
-ALTER TABLE View_Event_Information
-MODIFY event_start_time NOT NULL;
-
-ALTER TABLE View_Event_Information
-MODIFY event_end_time NOT NULL;
