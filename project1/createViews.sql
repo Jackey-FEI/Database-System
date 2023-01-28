@@ -1,6 +1,6 @@
 -- -- PRAGMA foreign_keys = ON;
 
-CREATE TABLE Current_City_F As:
+CREATE TABLE Current_City_F As
 SELECT
     Users.user_id,
     Cities.city_id,
@@ -11,9 +11,9 @@ FROM Users
 JOIN User_Current_Cities
   ON Users.user_id = User_Current_Cities.user_id
 JOIN Cities
-  ON User_Current_Cities.city_id = Cities.city_id;
+  ON User_Current_Cities.current_city_id = Cities.city_id;
 
-CREATE TABLE Hometown_City_F As:
+CREATE TABLE Hometown_City_F As
 SELECT
     Users.user_id,
     Cities.city_id,
@@ -24,15 +24,15 @@ FROM Users
 JOIN User_Hometown_Cities
   ON Users.user_id = User_Hometown_Cities.user_id
 JOIN Cities
-  ON User_Hometown_Cities.city_id = Cities.city_id;
+  ON User_Hometown_Cities.hometown_city_id = Cities.city_id;
 
-CREATE TABLE Institution_F As:
+CREATE TABLE Institution_F As
 SELECT
    Users.user_id,
    Programs.institution,
    Education.program_year,
    Programs.concentration,
-   Programs.degree,
+   Programs.degree
 FROM Users
 JOIN Education
   ON Users.user_id = Education.user_id
@@ -40,7 +40,7 @@ JOIN Programs
   ON Education.program_id = Programs.program_id;
 
 
-CREATE TABLE View_User_Information As:
+CREATE TABLE View_User_Information As
 SELECT
     Users.user_id,
     Users.first_name,
@@ -63,15 +63,9 @@ FROM Users
 JOIN Current_City_F
   ON Users.user_id = Current_City_F.user_id
 JOIN Hometown_City_F
-  ON User.user_id = Hometown_City_F.user_id
+  ON Users.user_id = Hometown_City_F.user_id
 LEFT JOIN Institution_F
   ON Users.user_id = Institution_F.user_id;
-
-ALTER TABLE View_User_Information
-MODIFY first_name NOT NULL;
-
-ALTER TABLE View_User_Information
-MODIFY last_name NOT NULL;
 
 ALTER TABLE View_User_Information
 MODIFY year_of_birth NOT NULL;
@@ -98,10 +92,10 @@ INSERT INTO View_Are_Friends(user1_id,user2_id)
 SELECT user1_id,user2_id
 FROM Friends;
 
-CREATE TABLE View_Photo_Information As:
+CREATE TABLE View_Photo_Information As
 SELECT
     Albums.album_id,
-    Albums.owner_id,
+    Albums.album_owner_id As owner_id,
     Albums.cover_photo_id,
     Albums.album_name,
     Albums.album_created_time,
@@ -117,55 +111,27 @@ FROM Albums
 JOIN Photos
   ON Albums.album_id = Photos.album_id;
 
-ALTER TABLE View_Photo_Information
-MODIFY album_id NOT NULL;
-
-ALTER TABLE View_Photo_Information
-MODIFY owner_id NOT NULL;
-
-ALTER TABLE View_Photo_Information
-MODIFY cover_photo_id NOT NULL;
-
-ALTER TABLE View_Photo_Information
-MODIFY album_name NOT NULL;
-
-ALTER TABLE View_Photo_Information
-MODIFY album_created_time NOT NULL;
 
 ALTER TABLE View_Photo_Information
 MODIFY album_modified_time NOT NULL;
 
 ALTER TABLE View_Photo_Information
-MODIFY album_link NOT NULL;
-    
-ALTER TABLE View_Photo_Information
-MODIFY album_visibility NOT NULL;
-
-ALTER TABLE View_Photo_Information
-MODIFY photo_id NOT NULL;
-
-ALTER TABLE View_Photo_Information
-MODIFY photo_created_time NOT NULL;
-
-ALTER TABLE View_Photo_Information
 MODIFY photo_modified_time NOT NULL;
 
-ALTER TABLE View_Photo_Information
-MODIFY photo_link NOT NULL;
 
 CREATE TABLE View_Tag_Information (
     photo_id INTEGER NOT NULL,
     tag_subject_id INTEGER NOT NULL,
     tag_created_time TIMESTAMP NOT NULL,
     tag_x_coordinate NUMBER NOT NULL,
-    tag_y_coordinate NUMBER NOT NULL,
+    tag_y_coordinate NUMBER NOT NULL
 );
 
-INSERT INTO View_Tag_Information(photo_id, tag_subject_id, tag_created_time, tag_x_coordinate, tag_y_coordinate)
+INSERT INTO View_Tag_Information (photo_id, tag_subject_id, tag_created_time, tag_x_coordinate, tag_y_coordinate)
 SELECT tag_photo_id, tag_subject_id, tag_created_time, tag_x, tag_y
 FROM Tags;
 
-CREATE TABLE View_Event_Information As:
+CREATE TABLE View_Event_Information As
 SELECT
     User_Events.event_id,
     User_Events.event_creator_id,
@@ -185,14 +151,6 @@ FROM User_Events
 JOIN Cities
   ON User_Events.event_city_id = Cities.city_id;
 
-ALTER TABLE View_Event_Information
-MODIFY event_id NOT NULL;
-
-ALTER TABLE View_Event_Information
-MODIFY event_creator_id NOT NULL;
-
-ALTER TABLE View_Event_Information
-MODIFY event_name NOT NULL;
 
 ALTER TABLE View_Event_Information
 MODIFY event_host NOT NULL;
@@ -205,15 +163,6 @@ MODIFY event_subtype NOT NULL;
 
 ALTER TABLE View_Event_Information
 MODIFY event_address NOT NULL;
-
-ALTER TABLE View_Event_Information
-MODIFY event_city NOT NULL;
-
-ALTER TABLE View_Event_Information
-MODIFY event_state NOT NULL;
-
-ALTER TABLE View_Event_Information
-MODIFY event_country NOT NULL;
 
 ALTER TABLE View_Event_Information
 MODIFY event_start_time NOT NULL;

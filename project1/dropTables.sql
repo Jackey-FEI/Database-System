@@ -10,7 +10,7 @@ DROP TABLE Education;
 DROP TABLE Programs;
 DROP TABLE Messages;
 DROP TABLE Cities;
-DROP TABLE Users;
+DROP TABLE Users CASCADE CONSTRAINTS;
 
 DROP SEQUENCE Cities_seq;
 DROP SEQUENCE Programs_seq;
