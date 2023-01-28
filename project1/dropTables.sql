@@ -11,7 +11,7 @@ DROP TABLE Programs;
 DROP TABLE Messages;
 DROP TABLE Cities;
 DROP TABLE Users;
-DROP SEQUENCE Users_seq;
+
 DROP SEQUENCE Cities_seq;
 DROP SEQUENCE Events_seq;
 DROP SEQUENCE Photos_seq;

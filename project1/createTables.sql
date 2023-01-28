@@ -5,21 +5,9 @@ CREATE TABLE Users (
     last_name VARCHAR2(100) NOT NULL,
     year_of_birth INTEGER,
     month_of_birth INTEGER,
-    day_of_brith INTEGER,
+    day_of_birth INTEGER,
     gender VARCHAR2(100)
 );
-
-CREATE SEQUENCE Users_Seq
-    START WITH 1
-    INCREMENT BY 1;
-
-CREATE TRIGGER Users_Insert
-    BEFORE INSERT ON Users
-    FOR EACH ROW
-        BEGIN
-            SELECT Users_Seq.NEXTVAL INTO :NEW.user_id FROM DUAL;
-        END;
-/
 
 CREATE TABLE Friends (
     user1_id INTEGER NOT NULL,
