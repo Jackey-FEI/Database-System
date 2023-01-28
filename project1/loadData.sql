@@ -66,6 +66,7 @@ ON (e.event_city = c.city_name AND
     e.event_state = c.state_name AND
     e.event_country = c.country_name);
 
+SET AUTOCOMMIT OFF;
 INSERT INTO Albums(album_id, album_owner_id, album_name,
                    album_created_time, album_modified_time,
                    album_link, album_visibility, cover_photo_id)
@@ -81,6 +82,8 @@ SELECT DISTINCT photo_id, album_id, photo_caption,
                 photo_created_time, photo_modified_time,
                 photo_link
 FROM project1.Public_Photo_Information;
+COMMIT;
+SET AUTOCOMMIT ON;
 
 INSERT INTO Tags(tag_photo_id, tag_subject_id, tag_created_time,
                  tag_x, tag_y)
