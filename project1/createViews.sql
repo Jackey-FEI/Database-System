@@ -1,6 +1,6 @@
 -- -- PRAGMA foreign_keys = ON;
 
-CREATE TABLE Current_City_F As
+CREATE VIEW Current_City_F As
 SELECT
     Users.user_id,
     Cities.city_id,
@@ -13,7 +13,7 @@ JOIN User_Current_Cities
 JOIN Cities
   ON User_Current_Cities.current_city_id = Cities.city_id;
 
-CREATE TABLE Hometown_City_F As
+CREATE VIEW Hometown_City_F As
 SELECT
     Users.user_id,
     Cities.city_id,
@@ -26,7 +26,7 @@ JOIN User_Hometown_Cities
 JOIN Cities
   ON User_Hometown_Cities.hometown_city_id = Cities.city_id;
 
-CREATE TABLE Institution_F As
+CREATE VIEW Institution_F As
 SELECT
    Users.user_id,
    Programs.institution,
