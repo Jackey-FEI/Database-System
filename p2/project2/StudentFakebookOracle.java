@@ -266,15 +266,13 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 tp.addTaggedUser(u3);
                 results.add(tp);
             */
-            String execute = "CREATE VIEW Photoids As" + 
-                "SELECT Tag_Photo_ID, COUNT(*) As count " +
-                "FROM " + TagsTable + " " +
-                "GROUP BY Tag_Photo_ID " +
-                "ORDER BY COUNT(*) DESC, Tag_Photo_ID ASC" +
-                "FETCH FIRST " + num+ " ROWS ONLY";
-            stmt.executeUpdate( execute
-                );
             ResultSet rst = stmt.executeQuery(
+                            "WITH Photoids As " +
+                            "(SELECT Tag_Photo_ID, COUNT(*) As count " +
+                            "FROM " + TagsTable + " " +
+                            "GROUP BY Tag_Photo_ID " +
+                            "ORDER BY COUNT(*) DESC, Tag_Photo_ID ASC " +
+                            "FETCH FIRST " + num+ " ROWS ONLY) " +
                             "SELECT P.Photo_ID, P.Album_id, P.Photo_Link, A.Album_Name, U.User_ID, U.First_Name, U.Last_Name " +
                             "FROM "+ PhotosTable + " P, " + AlbumsTable + " A, Photoids, " + UsersTable + " U, " +TagsTable + " T " +
                             "WHERE P.Album_id = A.Album_id " + 
@@ -284,44 +282,37 @@ public final class StudentFakebookOracle extends FakebookOracle {
                             "ORDER BY Photoids.count DESC, Photoids.Tag_Photo_ID ASC, U.User_ID ASC"
                              );
             long id = -1;
-            while (rst.next())
+            if (rst.next())
             {
-                 PhotoInfo p = new PhotoInfo(rst.getLong(1),rst.getLong(2),rst.getString(3),rst.getString(4));
+                while(true)
+                {
+                    boolean needbreak = false;
+                    PhotoInfo p = new PhotoInfo(rst.getLong(1),rst.getLong(2),rst.getString(3),rst.getString(4));
                     TaggedPhotoInfo  tp = new TaggedPhotoInfo(p);
-                    UserInfo u1 = new UserInfo(rst.getLong(5), rst.getString(6), rst.getString(7));
+                    id = rst.getLong(1);
+                    // if (rst.getLong(1) != id)
+                    // {
+                    //     p = new PhotoInfo(rst.getLong(1),rst.getLong(2),rst.getString(3),rst.getString(4));
+                    //     tp = new TaggedPhotoInfo(p);
+                    //     id = rst.getLong(1);
+                    // }
+                    while (rst.getLong(1) == id)
+                    {
+                        UserInfo u1 = new UserInfo(rst.getLong(5), rst.getString(6), rst.getString(7));
+                        tp.addTaggedUser(u1);
+                        if (!rst.next())
+                        {
+                            needbreak = true;
+                            break;
+                        }
+                    }
                     results.add(tp);
+                    if (needbreak)
+                    {
+                        break;
+                    }
+                }
             }
-            // if (rst.next())
-            // {
-            //     while(true)
-            //     {
-            //         boolean needbreak = false;
-            //         PhotoInfo p = new PhotoInfo(rst.getLong(1),rst.getLong(2),rst.getString(3),rst.getString(4));
-            //         TaggedPhotoInfo  tp = new TaggedPhotoInfo(p);
-            //         id = rst.getLong(1);
-            //         // if (rst.getLong(1) != id)
-            //         // {
-            //         //     p = new PhotoInfo(rst.getLong(1),rst.getLong(2),rst.getString(3),rst.getString(4));
-            //         //     tp = new TaggedPhotoInfo(p);
-            //         //     id = rst.getLong(1);
-            //         // }
-            //         while (rst.getLong(1) == id)
-            //         {
-            //             UserInfo u1 = new UserInfo(rst.getLong(5), rst.getString(6), rst.getString(7));
-            //             tp.addTaggedUser(u1);
-            //             if (!rst.next())
-            //             {
-            //                 needbreak = true;
-            //                 break;
-            //             }
-            //         }
-            //         results.add(tp);
-            //         if (needbreak)
-            //         {
-            //             break;
-            //         }
-            //     }
-            // }
             
             
         } catch (SQLException e) {
