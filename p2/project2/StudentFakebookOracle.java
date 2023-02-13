@@ -242,6 +242,29 @@ public final class StudentFakebookOracle extends FakebookOracle {
 
         try (Statement stmt = oracle.createStatement(FakebookOracleConstants.AllScroll,
                 FakebookOracleConstants.ReadOnly)) {
+            stmt.executeUpdate("CREATE VIEW TAGGED_PAIRS AS " +
+                                "(SELECT T1.TAG_SUBJECT_ID AS USER1_ID, T2.TAG_SUBJECT_ID AS USER2_ID, T1.TAG_PHOTO_ID AS TAG_PHOTO_ID " +
+                                "FROM " + TagsTable + " T1, " + TagsTable + " T2 " +
+                                "WHERE T1.TAG_PHOTO_ID = T2.TAG_PHOTO_ID AND T1.TAG_SUBJECT_ID < T2.TAG_SUBJECT_ID )"
+                                );
+
+            ResultSet rst = stmt.executeQuery(
+                "SELECT DISTINCT U1.USER_ID AS USER1_ID, U1.FIRST_NAME AS USER1_FIRST_NAME, U1.LAST_NAME AS USER1_LAST_NAME, U1.YEAR_OF_BIRTH AS USER1_YEAR, U2.USER_ID AS USER2_ID, U2.FIRST_NAME AS USER2_FIRST_NAME, U2.LAST_NAME AS USER2_LAST_NAME, U2.YEAR_OF_BIRTH AS USER2_YEAR " +
+                "FROM " + UsersTable + " U1, " + UsersTable + " U2 " +
+                "JOIN TAGGED_PAIRS T ON T.USER1_ID = U1.USER_ID AND T.USER2_ID = U2.USER_ID " +
+                "WHERE U1.USER_ID < U2.USER_ID AND U1.GENDER = U2.GENDER " +
+                "AND ABS(U1.YEAR_OF_BIRTH - U2.YEAR_OF_BIRTH) <= " + yearDiff + " " +
+                "AND NOT EXISTS (SELECT * FROM " + FriendsTable + " F WHERE F.USER1_ID = U1.USER_ID AND F.USER2_ID = U2.USER_ID) " +
+                "GROUP BY U1.USER_ID,  U2.USER_ID HAVING COUNT(T.TAG_PHOTO_ID) >= 1 " +
+                "ORDER BY COUNT(T.TAG_PHOTO_ID) DESC, U1.USER_ID ASC, U2.USER_ID"
+                );
+            while (rst.next()) {
+                UserInfo u1 = new UserInfo(rst.getLong("USER1_ID"), rst.getString("USER1_FIRST_NAME"), rst.getString("USER1_LAST_NAME"));
+                UserInfo u2 = new UserInfo(rst.getLong("USER2_ID"), rst.getString("USER2_FIRST_NAME"), rst.getString("USER2_LAST_NAME"));
+                MatchPair mp = new MatchPair(u1, rst.getLong("USER1_YEAR"), u2, rst.getLong("USER2_YEAR"));
+                results.add(mp);
+            }
+            stmt.executeUpdate("DROP VIEW TAGGED_PAIRS");
             /*
                 EXAMPLE DATA STRUCTURE USAGE
                 ============================================
