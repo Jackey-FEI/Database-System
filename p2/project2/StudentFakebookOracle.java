@@ -411,6 +411,77 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 up.addSharedFriend(u3);
                 results.add(up);
             */
+            ResultSet rst = stmt.executeQuery(
+                            "WITH Bidirection1 As" +
+                            "(SELECT User1_ID As first_user, User2_ID As second_user " +
+                            "FROM " + FriendsTable +" " +
+                            "UNION " +
+                            "SELECT User2_ID As first_user, User1_ID As second_user " +
+                            "FROM " + FriendsTable + "), " +
+                            "Bidirection2 As " +
+                            "(SELECT User1_ID As first_user, User2_ID As second_user " +
+                            "FROM " + FriendsTable + " " +
+                            "UNION " +
+                            "SELECT User2_ID As first_user, User1_ID As second_user " +
+                            "FROM " + FriendsTable + "), " +
+                            "Selection As " +
+                            "(SELECT Bidirection1.first_user, Bidirection2.second_user, COUNT(*) As count " +
+                            "FROM  Bidirection1, Bidirection2 " +
+                            "WHERE Bidirection1.second_user = Bidirection2.first_user " +
+                            "AND Bidirection1.first_user < Bidirection2.second_user " +
+                            "AND NOT EXISTS (SELECT * FROM " + FriendsTable + " F WHERE Bidirection1.first_user = F.User1_ID AND Bidirection2.second_user = F.User2_ID) " +
+                            "GROUP BY Bidirection1.first_user, Bidirection2.second_user " +
+                            "ORDER BY COUNT(*) DESC, Bidirection1.first_user ASC, Bidirection2.second_user ASC " +
+                            "FETCH FIRST " + num + " ROWS ONLY) " +
+                            "SELECT F1.First_Name, F1.Last_Name, Bidirection1.first_user, " + 
+                            "Bidirection1.second_user, Bidirection2.second_user, " +
+                            "F2.First_Name, F2.Last_Name, " +
+                            "F3.First_Name, F3.Last_Name " + 
+                            "FROM  Bidirection1, Bidirection2, Selection, " + UsersTable +" F1, " +UsersTable +" F2, " +UsersTable +" F3 " +
+                            "WHERE Bidirection1.second_user = Bidirection2.first_user " +
+                            "AND Bidirection1.first_user < Bidirection2.second_user " +
+                            "AND Bidirection1.first_user = Selection.first_user " +
+                            "AND Bidirection2.second_user = Selection.second_user " +
+                            "AND F1.User_ID = Bidirection1.first_user " + 
+                            "AND F2.User_ID = Bidirection1.second_user " +
+                            "AND F3.User_ID = Bidirection2.second_user " +
+                            "ORDER BY Selection.count DESC, Bidirection1.first_user ASC, Bidirection2.second_user ASC, Bidirection1.second_user ASC"
+                             );
+            long id1 = -1;
+            long id2 = -1;
+            if (rst.next())
+            {
+                while(true)
+                {
+                    boolean needbreak = false;
+                    UserInfo u1 = new UserInfo(rst.getLong(3), rst.getString(1), rst.getString(2));
+                    UserInfo u2 = new UserInfo(rst.getLong(5), rst.getString(8), rst.getString(9));
+                    UsersPair up = new UsersPair(u1, u2);
+                    id1 = rst.getLong(3);
+                    id2 = rst.getLong(5);
+                    // if (rst.getLong(1) != id)
+                    // {
+                    //     p = new PhotoInfo(rst.getLong(1),rst.getLong(2),rst.getString(3),rst.getString(4));
+                    //     tp = new TaggedPhotoInfo(p);
+                    //     id = rst.getLong(1);
+                    // }
+                    while (rst.getLong(3) == id1 && rst.getLong(5) == id2 )
+                    {
+                        UserInfo u3 = new UserInfo(rst.getLong(4), rst.getString(6), rst.getString(7));
+                        up.addSharedFriend(u3);
+                        if (!rst.next())
+                        {
+                            needbreak = true;
+                            break;
+                        }
+                    }
+                    results.add(up);
+                    if (needbreak)
+                    {
+                        break;
+                    }
+                }
+            }
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
@@ -435,7 +506,28 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 info.addState("New Hampshire");
                 return info;
             */
-            return new EventStateInfo(-1); // placeholder for compilation
+             int max = 0;
+             ResultSet rst = stmt.executeQuery(
+                            "SELECT C.State_Name, COUNT(*) As count " +
+                            "FROM " + CitiesTable + " C, " + EventsTable + " E " +
+                            "WHERE C.City_ID = E.Event_City_ID " +
+                            "GROUP BY C.State_Name " +
+                            "ORDER BY COUNT(*) DESC, C.State_Name ASC");
+             if (rst.next())
+             {
+                 max = rst.getInt(2);
+                 EventStateInfo info = new EventStateInfo(max);
+                 info.addState(rst.getString(1));
+                 while(rst.next()){
+                 if(rst.getInt(2) == max)
+                 {
+                    info.addState(rst.getString(1));
+                 }
+                }
+                return info;
+             }
+             else
+               return new EventStateInfo(-1); // placeholder for compilation
         } catch (SQLException e) {
             System.err.println(e.getMessage());
             return new EventStateInfo(-1);
