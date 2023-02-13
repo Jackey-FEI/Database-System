@@ -125,7 +125,64 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 info.setCommonNameCount(42);
                 return info;
             */
-            return new FirstNameInfo(); // placeholder for compilation
+            FirstNameInfo info = new FirstNameInfo();
+             int longname = 0; 
+             int shortname = 0;
+             ResultSet rst = stmt.executeQuery(
+                            "SELECT DISTINCT First_Name " +
+                            "FROM " + UsersTable + " " +
+                            "ORDER BY LENGTH(First_Name) DESC, First_Name ASC");
+             while(rst.next()){
+                String name = rst.getString(1);
+                if (rst.isFirst())
+                {
+                    info.addLongName(name);
+                    longname = name.length();
+                }
+                else if(name.length() == longname)
+                {
+                    info.addLongName(name);
+                }
+             }
+             rst = stmt.executeQuery(
+                            "SELECT DISTINCT First_Name " +
+                            "FROM " + UsersTable + " " +
+                            "ORDER BY LENGTH(First_Name) ASC, First_Name ASC");
+             while(rst.next()){
+                String name = rst.getString(1);
+                if (rst.isFirst())
+                {
+                    info.addShortName(name);
+                    shortname = name.length();
+                }
+                else if(name.length() == shortname)
+                {
+                    info.addShortName(name);
+                }
+             }
+             rst = stmt.executeQuery(
+                            "SELECT First_Name, COUNT(*) As count " +
+                            "FROM " + UsersTable + " " +
+                            "GROUP BY First_Name " +
+                            "ORDER BY count DESC, First_Name ASC");
+             int mostcount = 0;
+             int sum = 0;
+             while(rst.next())
+             {
+                if (rst.isFirst())
+                {
+                    mostcount = rst.getInt(2);
+                    sum += rst.getInt(2);
+                    info.addCommonName(rst.getString(1));
+                }
+                else if (rst.getInt(2) == mostcount)
+                {
+                    info.addCommonName(rst.getString(1));
+                    sum+= rst.getInt(2);
+                }
+             }
+             info.setCommonNameCount(sum);
+            return info; // placeholder for compilation
         } catch (SQLException e) {
             System.err.println(e.getMessage());
             return new FirstNameInfo();
@@ -193,7 +250,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
     //            of the users therein tagged
     public FakebookArrayList<TaggedPhotoInfo> findPhotosWithMostTags(int num) throws SQLException {
         FakebookArrayList<TaggedPhotoInfo> results = new FakebookArrayList<TaggedPhotoInfo>("\n");
-
+        
         try (Statement stmt = oracle.createStatement(FakebookOracleConstants.AllScroll,
                 FakebookOracleConstants.ReadOnly)) {
             /*
@@ -209,6 +266,64 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 tp.addTaggedUser(u3);
                 results.add(tp);
             */
+            String execute = "CREATE VIEW Photoids As" + 
+                "SELECT Tag_Photo_ID, COUNT(*) As count " +
+                "FROM " + TagsTable + " " +
+                "GROUP BY Tag_Photo_ID " +
+                "ORDER BY COUNT(*) DESC, Tag_Photo_ID ASC" +
+                "FETCH FIRST " + num+ " ROWS ONLY";
+            stmt.executeUpdate( execute
+                );
+            ResultSet rst = stmt.executeQuery(
+                            "SELECT P.Photo_ID, P.Album_id, P.Photo_Link, A.Album_Name, U.User_ID, U.First_Name, U.Last_Name " +
+                            "FROM "+ PhotosTable + " P, " + AlbumsTable + " A, Photoids, " + UsersTable + " U, " +TagsTable + " T " +
+                            "WHERE P.Album_id = A.Album_id " + 
+                            "AND Photoids.Tag_Photo_ID = P.Photo_ID " +
+                            "AND T.Tag_Photo_ID = Photoids.Tag_Photo_ID "  +
+                            "AND T.Tag_Subject_ID = U.User_ID " +
+                            "ORDER BY Photoids.count DESC, Photoids.Tag_Photo_ID ASC, U.User_ID ASC"
+                             );
+            long id = -1;
+            while (rst.next())
+            {
+                 PhotoInfo p = new PhotoInfo(rst.getLong(1),rst.getLong(2),rst.getString(3),rst.getString(4));
+                    TaggedPhotoInfo  tp = new TaggedPhotoInfo(p);
+                    UserInfo u1 = new UserInfo(rst.getLong(5), rst.getString(6), rst.getString(7));
+                    results.add(tp);
+            }
+            // if (rst.next())
+            // {
+            //     while(true)
+            //     {
+            //         boolean needbreak = false;
+            //         PhotoInfo p = new PhotoInfo(rst.getLong(1),rst.getLong(2),rst.getString(3),rst.getString(4));
+            //         TaggedPhotoInfo  tp = new TaggedPhotoInfo(p);
+            //         id = rst.getLong(1);
+            //         // if (rst.getLong(1) != id)
+            //         // {
+            //         //     p = new PhotoInfo(rst.getLong(1),rst.getLong(2),rst.getString(3),rst.getString(4));
+            //         //     tp = new TaggedPhotoInfo(p);
+            //         //     id = rst.getLong(1);
+            //         // }
+            //         while (rst.getLong(1) == id)
+            //         {
+            //             UserInfo u1 = new UserInfo(rst.getLong(5), rst.getString(6), rst.getString(7));
+            //             tp.addTaggedUser(u1);
+            //             if (!rst.next())
+            //             {
+            //                 needbreak = true;
+            //                 break;
+            //             }
+            //         }
+            //         results.add(tp);
+            //         if (needbreak)
+            //         {
+            //             break;
+            //         }
+            //     }
+            // }
+            
+            
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
