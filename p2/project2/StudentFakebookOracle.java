@@ -174,14 +174,18 @@ public final class StudentFakebookOracle extends FakebookOracle {
 
         try (Statement stmt = oracle.createStatement(FakebookOracleConstants.AllScroll,
                 FakebookOracleConstants.ReadOnly)) {
-            /*
-                EXAMPLE DATA STRUCTURE USAGE
-                ============================================
-                UserInfo u1 = new UserInfo(9, "Meryl", "Streep");
-                UserInfo u2 = new UserInfo(104, "Tom", "Hanks");
-                results.add(u1);
-                results.add(u2);
-            */
+            ResultSet rst = stmt.executeQuery(
+                "SELECT DISTINCT U.USER_ID, U.FIRST_NAME, U.LAST_NAME " +
+                "FROM " + UsersTable + " U " +
+                "WHERE U.USER_ID IN " +
+                "(SELECT H.USER_ID AS USER_ID FROM " + HometownCitiesTable + " H, " + CurrentCitiesTable + " C " +
+                "WHERE H.USER_ID = C.USER_ID AND H.HOMETOWN_CITY_ID <> C.CURRENT_CITY_ID) " +
+                "ORDER BY U.USER_ID ASC"
+                );
+            while (rst.next()) {
+                UserInfo u = new UserInfo(rst.getLong(1), rst.getString(2), rst.getString(3));
+                results.add(u);
+            }
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
