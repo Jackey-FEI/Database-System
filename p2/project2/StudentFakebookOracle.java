@@ -539,6 +539,10 @@ public final class StudentFakebookOracle extends FakebookOracle {
                  {
                     info.addState(rst.getString(1));
                  }
+                 else
+                 {
+                    break;
+                 }
                 }
                 return info;
              }
