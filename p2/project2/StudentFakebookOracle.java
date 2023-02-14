@@ -346,31 +346,46 @@ public final class StudentFakebookOracle extends FakebookOracle {
     public FakebookArrayList<MatchPair> matchMaker(int num, int yearDiff) throws SQLException {
         FakebookArrayList<MatchPair> results = new FakebookArrayList<MatchPair>("\n");
 
-        try (Statement stmt = oracle.createStatement(FakebookOracleConstants.AllScroll,
+        try (Statement stmt1 = oracle.createStatement(FakebookOracleConstants.AllScroll,
                 FakebookOracleConstants.ReadOnly)) {
-            stmt.executeUpdate("CREATE VIEW TAGGED_PAIRS AS " +
-                                "(SELECT T1.TAG_SUBJECT_ID AS USER1_ID, T2.TAG_SUBJECT_ID AS USER2_ID, T1.TAG_PHOTO_ID AS TAG_PHOTO_ID " +
-                                "FROM " + TagsTable + " T1, " + TagsTable + " T2 " +
-                                "WHERE T1.TAG_PHOTO_ID = T2.TAG_PHOTO_ID AND T1.TAG_SUBJECT_ID < T2.TAG_SUBJECT_ID )"
-                                );
+                try (Statement stmt2 = oracle.createStatement(FakebookOracleConstants.AllScroll,
+                        FakebookOracleConstants.ReadOnly)) {
+                    ResultSet rst1 = stmt1.executeQuery(
+                        "WITH TAGGED_PAIRS AS " + 
+                        "(SELECT T1.TAG_SUBJECT_ID AS USER1_ID, T2.TAG_SUBJECT_ID AS USER2_ID, COUNT(*) AS COUNT_TAGGED " +
+                        "FROM " + TagsTable + " T1, " + TagsTable + " T2 " + 
+                        "WHERE T1.TAG_PHOTO_ID = T2.TAG_PHOTO_ID AND T1.TAG_SUBJECT_ID < T2.TAG_SUBJECT_ID " +
+                        "GROUP BY T1.TAG_SUBJECT_ID, T2.TAG_SUBJECT_ID) " +
+                        "SELECT * FROM ( " +
+                            "SELECT DISTINCT U1.USER_ID AS USER1_ID, U1.FIRST_NAME AS USER1_FIRST_NAME, U1.LAST_NAME AS USER1_LAST_NAME, U1.YEAR_OF_BIRTH AS USER1_YEAR, U2.USER_ID AS USER2_ID, U2.FIRST_NAME AS USER2_FIRST_NAME, U2.LAST_NAME AS USER2_LAST_NAME, U2.YEAR_OF_BIRTH AS USER2_YEAR, T.COUNT_TAGGED " +
+                            "FROM  " + UsersTable + " U1 " +
+                            "JOIN TAGGED_PAIRS T ON T.USER1_ID = U1.USER_ID " +
+                            "JOIN " + UsersTable + " u2 ON T.USER2_ID = U2.USER_ID " +
+                            "WHERE U1.USER_ID < U2.USER_ID AND U1.GENDER = U2.GENDER " +
+                            "AND ABS(U1.YEAR_OF_BIRTH - U2.YEAR_OF_BIRTH) <= " + yearDiff + " " +
+                            "AND NOT EXISTS (SELECT * FROM " + FriendsTable + " F WHERE F.USER1_ID = U1.USER_ID AND F.USER2_ID = U2.USER_ID) " +
+                            "ORDER BY T.COUNT_TAGGED DESC, U1.USER_ID ASC, U2.USER_ID ASC " +
+                        ") WHERE ROWNUM <= " + num
+                        );
+                    while (rst1.next()) {
+                        long user1_id = rst1.getLong("USER1_ID");
+                        long user2_id = rst1.getLong("USER2_ID");
 
-            ResultSet rst = stmt.executeQuery(
-                "SELECT DISTINCT U1.USER_ID AS USER1_ID, U1.FIRST_NAME AS USER1_FIRST_NAME, U1.LAST_NAME AS USER1_LAST_NAME, U1.YEAR_OF_BIRTH AS USER1_YEAR, U2.USER_ID AS USER2_ID, U2.FIRST_NAME AS USER2_FIRST_NAME, U2.LAST_NAME AS USER2_LAST_NAME, U2.YEAR_OF_BIRTH AS USER2_YEAR " +
-                "FROM " + UsersTable + " U1, " + UsersTable + " U2 " +
-                "JOIN TAGGED_PAIRS T ON T.USER1_ID = U1.USER_ID AND T.USER2_ID = U2.USER_ID " +
-                "WHERE U1.USER_ID < U2.USER_ID AND U1.GENDER = U2.GENDER " +
-                "AND ABS(U1.YEAR_OF_BIRTH - U2.YEAR_OF_BIRTH) <= " + yearDiff + " " +
-                "AND NOT EXISTS (SELECT * FROM " + FriendsTable + " F WHERE F.USER1_ID = U1.USER_ID AND F.USER2_ID = U2.USER_ID) " +
-                "GROUP BY U1.USER_ID,  U2.USER_ID HAVING COUNT(T.TAG_PHOTO_ID) >= 1 " +
-                "ORDER BY COUNT(T.TAG_PHOTO_ID) DESC, U1.USER_ID ASC, U2.USER_ID"
-                );
-            while (rst.next()) {
-                UserInfo u1 = new UserInfo(rst.getLong("USER1_ID"), rst.getString("USER1_FIRST_NAME"), rst.getString("USER1_LAST_NAME"));
-                UserInfo u2 = new UserInfo(rst.getLong("USER2_ID"), rst.getString("USER2_FIRST_NAME"), rst.getString("USER2_LAST_NAME"));
-                MatchPair mp = new MatchPair(u1, rst.getLong("USER1_YEAR"), u2, rst.getLong("USER2_YEAR"));
-                results.add(mp);
-            }
-            stmt.executeUpdate("DROP VIEW TAGGED_PAIRS");
+                        UserInfo u1 = new UserInfo(user1_id, rst1.getString("USER1_FIRST_NAME"), rst1.getString("USER1_LAST_NAME"));
+                        UserInfo u2 = new UserInfo(user2_id, rst1.getString("USER2_FIRST_NAME"), rst1.getString("USER2_LAST_NAME"));
+                        MatchPair mp = new MatchPair(u1, rst1.getLong("USER1_YEAR"), u2, rst1.getLong("USER2_YEAR"));
+                        ResultSet rst2 = stmt2.executeQuery(
+                            "SELECT T1.TAG_PHOTO_ID, P.PHOTO_LINK, P.ALBUM_ID, A.ALBUM_NAME " + 
+                            "FROM " + TagsTable + " T1, " + TagsTable + " T2, " + PhotosTable + " P, " + AlbumsTable + " A " +
+                            "WHERE T1.TAG_SUBJECT_ID = " + user1_id + " AND T2.TAG_SUBJECT_ID = " + user2_id + " AND T1.TAG_PHOTO_ID = T2.TAG_PHOTO_ID " +
+                            "AND T1.TAG_PHOTO_ID = P.PHOTO_ID AND P.ALBUM_ID = A.ALBUM_ID"
+                        );
+                        while (rst2.next()) {
+                            PhotoInfo p = new PhotoInfo(rst2.getLong(1), rst2.getLong(3), rst2.getString(2), rst2.getString(4));
+                            mp.addSharedPhoto(p);
+                        }
+                        results.add(mp);
+                    }
             /*
                 EXAMPLE DATA STRUCTURE USAGE
                 ============================================
@@ -381,6 +396,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 mp.addSharedPhoto(p);
                 results.add(mp);
             */
+            }
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
@@ -544,14 +560,42 @@ public final class StudentFakebookOracle extends FakebookOracle {
     public AgeInfo findAgeInfo(long userID) throws SQLException {
         try (Statement stmt = oracle.createStatement(FakebookOracleConstants.AllScroll,
                 FakebookOracleConstants.ReadOnly)) {
-            /*
-                EXAMPLE DATA STRUCTURE USAGE
-                ============================================
-                UserInfo old = new UserInfo(12000000, "Galileo", "Galilei");
-                UserInfo young = new UserInfo(80000000, "Neil", "deGrasse Tyson");
-                return new AgeInfo(old, young);
-            */
-            return new AgeInfo(new UserInfo(-1, "UNWRITTEN", "UNWRITTEN"), new UserInfo(-1, "UNWRITTEN", "UNWRITTEN")); // placeholder for compilation
+            UserInfo old = new UserInfo(-1, "UNWRITTEN", "UNWRITTEN");
+            UserInfo young = new UserInfo(-1, "UNWRITTEN", "UNWRITTEN");
+            ResultSet rst1 = stmt.executeQuery(
+                "SELECT * FROM ( " +
+                "SELECT U.USER_ID, U.FIRST_NAME, U.LAST_NAME " +
+                "FROM " + UsersTable +" U " +
+                "WHERE U.USER_ID IN ( " +
+                    "SELECT F.USER1_ID AS USER_ID FROM " + FriendsTable + " F WHERE F.USER2_ID = " + userID + " " +
+                    "UNION " +
+                    "SELECT F.USER2_ID AS USER_ID FROM " + FriendsTable + " F WHERE F.USER1_ID = " + userID + " " +
+                ") " +
+                "ORDER BY U.YEAR_OF_BIRTH ASC, U.MONTH_OF_BIRTH ASC, U.DAY_OF_BIRTH ASC " +
+            ") " +
+            "WHERE ROWNUM = 1"
+            );
+            while (rst1.next()) {
+                old = new UserInfo(rst1.getLong(1), rst1.getString(2), rst1.getString(3)); 
+            }
+
+            ResultSet rst2 = stmt.executeQuery(
+                "SELECT * FROM ( " +
+                "SELECT U.USER_ID, U.FIRST_NAME, U.LAST_NAME " +
+                "FROM " + UsersTable +" U " +
+                "WHERE U.USER_ID IN ( " +
+                    "SELECT F.USER1_ID AS USER_ID FROM " + FriendsTable + " F WHERE F.USER2_ID = " + userID + " " +
+                    "UNION " +
+                    "SELECT F.USER2_ID AS USER_ID FROM " + FriendsTable + " F WHERE F.USER1_ID = " + userID + " " +
+                ") " +
+                "ORDER BY U.YEAR_OF_BIRTH DESC, U.MONTH_OF_BIRTH DESC, U.DAY_OF_BIRTH DESC " +
+                ") " +
+                "WHERE ROWNUM = 1"
+            );
+            while (rst2.next()) {
+                young = new UserInfo(rst2.getLong(1), rst2.getString(2), rst2.getString(3)); 
+            }
+            return new AgeInfo(old, young); // placeholder for compilation
         } catch (SQLException e) {
             System.err.println(e.getMessage());
             return new AgeInfo(new UserInfo(-1, "ERROR", "ERROR"), new UserInfo(-1, "ERROR", "ERROR"));
@@ -571,14 +615,21 @@ public final class StudentFakebookOracle extends FakebookOracle {
 
         try (Statement stmt = oracle.createStatement(FakebookOracleConstants.AllScroll,
                 FakebookOracleConstants.ReadOnly)) {
-            /*
-                EXAMPLE DATA STRUCTURE USAGE
-                ============================================
-                UserInfo u1 = new UserInfo(81023, "Kim", "Kardashian");
-                UserInfo u2 = new UserInfo(17231, "Kourtney", "Kardashian");
+            ResultSet rst = stmt.executeQuery(
+                "SELECT U1.USER_ID AS USER1_ID, U1.FIRST_NAME AS USER1_FIRST_NAME, U1.LAST_NAME AS USER1_LAST_NAME, U2.USER_ID AS USER2_ID, U2.FIRST_NAME AS USER2_FIRST_NAME, U2.LAST_NAME AS USER2_LAST_NAME " +
+                "FROM " + UsersTable + " U1, " + UsersTable + " U2, " + HometownCitiesTable + " H1, " + HometownCitiesTable + " H2 " +
+                "WHERE U1.USER_ID < U2.USER_ID AND U1.LAST_NAME = U2.LAST_NAME " +
+                "AND U1.USER_ID = H1.USER_ID AND U2.USER_ID = H2.USER_ID AND H1.HOMETOWN_CITY_ID = H2.HOMETOWN_CITY_ID " +
+                "AND ABS(U1.YEAR_OF_BIRTH - U2.YEAR_OF_BIRTH) < 10 " +
+                "AND EXISTS (SELECT * FROM " + FriendsTable + " F WHERE F.USER1_ID = U1.USER_ID AND F.USER2_ID = U2.USER_ID) " +
+                "ORDER BY U1.USER_ID ASC, U2.USER_ID ASC"
+            );
+            while (rst.next()) {
+                UserInfo u1 = new UserInfo(rst.getLong(1), rst.getString(2), rst.getString(3));
+                UserInfo u2 = new UserInfo(rst.getLong(4), rst.getString(5), rst.getString(6));
                 SiblingInfo si = new SiblingInfo(u1, u2);
                 results.add(si);
-            */
+            }
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
