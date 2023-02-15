@@ -575,7 +575,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
                     "UNION " +
                     "SELECT F.USER2_ID AS USER_ID FROM " + FriendsTable + " F WHERE F.USER1_ID = " + userID + " " +
                 ") " +
-                "ORDER BY U.YEAR_OF_BIRTH ASC, U.MONTH_OF_BIRTH ASC, U.DAY_OF_BIRTH ASC " +
+                "ORDER BY U.YEAR_OF_BIRTH ASC, U.MONTH_OF_BIRTH ASC, U.DAY_OF_BIRTH ASC, U.USER_ID DESC " +
             ") " +
             "WHERE ROWNUM = 1"
             );
@@ -592,7 +592,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
                     "UNION " +
                     "SELECT F.USER2_ID AS USER_ID FROM " + FriendsTable + " F WHERE F.USER1_ID = " + userID + " " +
                 ") " +
-                "ORDER BY U.YEAR_OF_BIRTH DESC, U.MONTH_OF_BIRTH DESC, U.DAY_OF_BIRTH DESC " +
+                "ORDER BY U.YEAR_OF_BIRTH DESC, U.MONTH_OF_BIRTH DESC, U.DAY_OF_BIRTH DESC, U.USER_ID DESC " +
                 ") " +
                 "WHERE ROWNUM = 1"
             );
