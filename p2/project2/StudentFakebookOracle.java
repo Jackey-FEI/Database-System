@@ -142,7 +142,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 else if(name.length() == longname)
                 {
                     info.addLongName(name);
-                }
+                } else break;
              }
              rst = stmt.executeQuery(
                             "SELECT DISTINCT First_Name " +
@@ -158,7 +158,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 else if(name.length() == shortname)
                 {
                     info.addShortName(name);
-                }
+                } else break;
              }
              rst = stmt.executeQuery(
                             "SELECT First_Name, COUNT(*) As count " +
@@ -179,7 +179,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 {
                     info.addCommonName(rst.getString(1));
                     sum+= rst.getInt(2);
-                }
+                } else break;
              }
              info.setCommonNameCount(sum);
             return info; // placeholder for compilation
