@@ -378,7 +378,8 @@ public final class StudentFakebookOracle extends FakebookOracle {
                             "SELECT T1.TAG_PHOTO_ID, P.PHOTO_LINK, P.ALBUM_ID, A.ALBUM_NAME " + 
                             "FROM " + TagsTable + " T1, " + TagsTable + " T2, " + PhotosTable + " P, " + AlbumsTable + " A " +
                             "WHERE T1.TAG_SUBJECT_ID = " + user1_id + " AND T2.TAG_SUBJECT_ID = " + user2_id + " AND T1.TAG_PHOTO_ID = T2.TAG_PHOTO_ID " +
-                            "AND T1.TAG_PHOTO_ID = P.PHOTO_ID AND P.ALBUM_ID = A.ALBUM_ID"
+                            "AND T1.TAG_PHOTO_ID = P.PHOTO_ID AND P.ALBUM_ID = A.ALBUM_ID " +
+                            "ORDER BY T1.TAG_PHOTO_ID ASC"
                         );
                         while (rst2.next()) {
                             PhotoInfo p = new PhotoInfo(rst2.getLong(1), rst2.getLong(3), rst2.getString(2), rst2.getString(4));
