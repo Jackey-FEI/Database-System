@@ -6,9 +6,9 @@ function find_user(city, dbname) {
     db = db.getSiblingDB(dbname);
 
     let results = [];
-    // TODO: find all users who live in city
-    // db.users.find(...);
-
+    db.users.find({"hometown.city": city}, {"user_id": true}).forEach((doc) => {
+        results.push(doc.user_id)
+    });
     // See test.js for a partial correctness check.
 
     return results;
