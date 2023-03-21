@@ -14,6 +14,6 @@ function unwind_friends(dbname) {
         {$unwind: {path: "$friends"}},
         {$project: {_id: false, user_id: true, friends: true}},
         {$out: "flat_users"}
-    ])
+    ]);
     return;
 }

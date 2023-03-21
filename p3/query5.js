@@ -12,6 +12,48 @@ function oldest_friend(dbname) {
 
     let results = {};
     // TODO: implement oldest friends
+    db.users.aggregate([
+        {$unwind: {path: "$friends"}},
+        {$project: {_id: false, user_id: true, friends: true}},
+        {$out: "flat_users"}
+    ]);
+
+    db.flat_users.find().forEach((u) => {
+        db.flat_users.insert({
+            user_id: u.friends,
+            friends: u.user_id
+        })
+    });
+
+    db.flat_users.aggregate([
+        {
+            $lookup: {
+                from: "users",
+                localField: "friends",
+                foreignField: "user_id",
+                as: "friends_info"
+            }
+        },
+        {
+            $project: {
+                user_id: true,
+                friends: true,
+                YOB: "$friends_info.YOB"
+            }
+        },
+        {
+            $sort: {
+                user_id: 1,
+                YOB: 1,
+                friends: 1
+            }
+        }
+    ]).forEach((cur) => {
+        if (!(cur.user_id in results)) {
+            results[cur.user_id] = cur.friends;
+        }
+    });
+
 
     return results;
 }
