@@ -18,12 +18,17 @@ function oldest_friend(dbname) {
         {$out: "flat_users"}
     ]);
 
-    db.flat_users.find().forEach((u) => {
-        db.flat_users.insert({
-            user_id: u.friends,
-            friends: u.user_id
-        })
-    });
+    let reverse_friends = db.flat_users.aggregate([ 
+        {
+            $project: {
+                _id: false,
+                user_id: "$friends",
+                friends: "$user_id"
+            }
+        }
+    ]).toArray();
+
+    db.flat_users.insertMany(reverse_friends);
 
     db.flat_users.aggregate([
         {
@@ -53,7 +58,6 @@ function oldest_friend(dbname) {
             results[cur.user_id] = cur.friends;
         }
     });
-
 
     return results;
 }
