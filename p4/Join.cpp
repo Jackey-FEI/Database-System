@@ -45,7 +45,8 @@ void partition_hash_helper(Disk* disk, Mem* mem, uint begin, uint end,
 
 	// Load remaining bucket pages to the disk
 	for (uint i = 0; i < MEM_SIZE_IN_PAGE - 1; i++) {
-		(partitions[i].*function_ptr)(mem->flushToDisk(disk, i));
+		if (!mem->mem_page(i)->empty())
+			(partitions[i].*function_ptr)(mem->flushToDisk(disk, i));
 	}
 }
 
@@ -87,8 +88,8 @@ void load_right_outer(Page* page, const Record& inner, const Record& outer) {
 	page->loadPair(inner, outer);
 }
 
-void probe_match_helper(Disk* disk, Mem* mem, vector<Bucket>& partitions,
-						Bucket& bucket, vector<uint> disk_pages,
+void probe_match_helper(Disk* disk, Mem* mem,
+						Bucket& bucket, vector<uint> &disk_pages,
 						vector<uint> (Bucket::*get_outer_rel)(),
 						vector<uint> (Bucket::*get_inner_rel)(),
 						void (*load_pair)(Page*, const Record&, const Record&)) {
@@ -159,18 +160,20 @@ vector<uint> probe(Disk* disk, Mem* mem, vector<Bucket>& partitions) {
 		}
 
 		if (bucket.num_left_rel_record < bucket.num_right_rel_record) {
-			probe_match_helper(disk, mem, partitions, bucket, disk_pages,
+			probe_match_helper(disk, mem, bucket, disk_pages,
 								&Bucket::get_left_rel, &Bucket::get_right_rel,
 								&load_left_outer);
 		} else {
-			probe_match_helper(disk, mem, partitions, bucket, disk_pages,
+			probe_match_helper(disk, mem, bucket, disk_pages,
 								&Bucket::get_right_rel, &Bucket::get_left_rel,
 								&load_right_outer);
 		}
 	}
 
 	// Load remaining output page to the disk
-	uint page_id = mem->flushToDisk(disk, MEM_SIZE_IN_PAGE - 2);
-	disk_pages.push_back(page_id);
+	if (!mem->mem_page(MEM_SIZE_IN_PAGE - 2)->empty()) {
+		uint page_id = mem->flushToDisk(disk, MEM_SIZE_IN_PAGE - 2);
+		disk_pages.push_back(page_id);
+	}
 	return disk_pages;
 }

@@ -1,3 +1,3 @@
 #!/bin/sh
 make
-./GHJ left_rel.txt right_rel.txt
+./GHJ left_rel.txt right_rel.txt > output.txt
